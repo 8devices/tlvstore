@@ -20,7 +20,7 @@ all: tlvs
 
 .PHONY: clean
 clean:
-	rm *.o tlvs
+	rm -f *.o tlvs
 
 .PHONY: install
 install: tlvs
