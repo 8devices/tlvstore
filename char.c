@@ -8,7 +8,7 @@
 #include <sys/types.h>
 
 #include "log.h"
-#include "char.h"
+#include "device.h"
 
 void storage_close(struct storage_device *dev)
 {

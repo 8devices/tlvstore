@@ -1,7 +1,7 @@
 #ifndef __STORAGE_PROTOCOL_H
 #define __STORAGE_PROTOCOL_H
 
-#include "char.h"
+#include "device.h"
 
 struct storage_protocol {
 	const char *name;

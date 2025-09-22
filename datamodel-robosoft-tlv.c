@@ -12,7 +12,7 @@
 #include "log.h"
 #include "utils.h"
 #include "tlv.h"
-#include "char.h"
+#include "device.h"
 #include "protocol.h"
 #include "datamodel-robosoft-tlv.h"
 

@@ -6,7 +6,7 @@
 
 #include "log.h"
 #include "utils.h"
-#include "char.h"
+#include "device.h"
 #include "protocol.h"
 #include "datamodel-firmux-struct.h"
 

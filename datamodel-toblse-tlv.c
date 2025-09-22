@@ -15,7 +15,7 @@
 #include "crc.h"
 #include "log.h"
 #include "utils.h"
-#include "char.h"
+#include "device.h"
 #include "tlv.h"
 #include "protocol.h"
 

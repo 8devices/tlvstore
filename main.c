@@ -6,7 +6,7 @@
 
 #include "log.h"
 #include "tlv.h"
-#include "char.h"
+#include "device.h"
 #include "protocol.h"
 
 #ifndef TLVS_DEFAULT_FILE
