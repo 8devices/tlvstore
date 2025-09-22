@@ -1,3 +1,4 @@
+/* TobuFi legacy sys-eeprom TLV datamodel */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -210,7 +211,7 @@ static ssize_t decompress_bin(void **data_out, void *data_in, size_t size_in)
 }
 #endif
 
-static int legacy_tlv_prop_check(char *key, char *in)
+static int toblse_tlv_prop_check(char *key, char *in)
 {
 	int i;
 
@@ -228,7 +229,7 @@ static int legacy_tlv_prop_check(char *key, char *in)
 	return 1;
 }
 
-static int legacy_tlv_prop_print_all(void *sp)
+static int toblse_tlv_prop_print_all(void *sp)
 {
 	struct tlv_store *tlvs = (struct tlv_store *)sp;
 	struct tlv_iterator iter;
@@ -339,7 +340,7 @@ static int legacy_tlv_prop_print_all(void *sp)
 	return fail;
 }
 
-static int legacy_tlv_prop_print(void *sp, char *key, char *out)
+static int toblse_tlv_prop_print(void *sp, char *key, char *out)
 {
 	struct tlv_store *tlvs = (struct tlv_store *)sp;
 	enum tlv_spec spec;
@@ -349,7 +350,7 @@ static int legacy_tlv_prop_print(void *sp, char *key, char *out)
 	int i, type;
 
 	if (!key)
-		return legacy_tlv_prop_print_all(sp);
+		return toblse_tlv_prop_print_all(sp);
 
 	if (strncmp(key, "GENERIC_MAC_", 12) == 0) {
 		ifname = key + 12;
@@ -428,7 +429,7 @@ static int legacy_tlv_prop_print(void *sp, char *key, char *out)
 	return 0;
 }
 
-static void legacy_tlv_prop_list(void)
+static void toblse_tlv_prop_list(void)
 {
 	int i;
 
@@ -440,12 +441,12 @@ static void legacy_tlv_prop_list(void)
 	}
 }
 
-static void legacy_tlv_free(void *sp)
+static void toblse_tlv_free(void *sp)
 {
 	tlvs_free((struct tlv_store *)sp);
 }
 
-static void *legacy_tlv_init(struct storage_device *dev, int force)
+static void *toblse_tlv_init(struct storage_device *dev, int force)
 {
 	struct eeprom_header *hdr;
 	struct tlv_store *tlvs;
@@ -474,16 +475,16 @@ static void *legacy_tlv_init(struct storage_device *dev, int force)
 	return tlvs;
 }
 
-static struct storage_protocol legacy_tlv_model = {
-	.name = "legacy-tlv",
-	.init = legacy_tlv_init,
-	.free = legacy_tlv_free,
-	.list = legacy_tlv_prop_list,
-	.check = legacy_tlv_prop_check,
-	.print = legacy_tlv_prop_print,
+static struct storage_protocol toblse_tlv_model = {
+	.name = "toblse-tlv",
+	.init = toblse_tlv_init,
+	.free = toblse_tlv_free,
+	.list = toblse_tlv_prop_list,
+	.check = toblse_tlv_prop_check,
+	.print = toblse_tlv_prop_print,
 };
 
-static void __attribute__((constructor)) legacy_tlv_register(void)
+static void __attribute__((constructor)) toblse_tlv_register(void)
 {
-	eeprom_register(&legacy_tlv_model);
+	eeprom_register(&toblse_tlv_model);
 }

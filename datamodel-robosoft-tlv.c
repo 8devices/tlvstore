@@ -1,3 +1,4 @@
+/* Robonode robosoft TLV datamodel */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,9 +14,9 @@
 #include "tlv.h"
 #include "char.h"
 #include "protocol.h"
-#include "datamodel-firmux-tlv.h"
+#include "datamodel-robosoft-tlv.h"
 
-#define EEPROM_MAGIC "FXDMTLV"
+#define EEPROM_MAGIC "RSDMTLV"
 #define EEPROM_VERSION 1
 
 #ifndef TLVS_DEFAULT_COMPRESSION
@@ -271,7 +272,7 @@ static struct tlv_group tlv_groups[] = {
 	{ NULL, EEPROM_ATTR_NONE, EEPROM_ATTR_NONE, INPUT_SPEC_NONE, NULL, NULL }
 };
 
-static struct tlv_property *firmux_tlv_prop_find(char *key)
+static struct tlv_property *robosoft_tlv_prop_find(char *key)
 {
 	struct tlv_property *tlvp;
 
@@ -288,7 +289,7 @@ static struct tlv_property *firmux_tlv_prop_find(char *key)
 	return tlvp;
 }
 
-static struct tlv_group *firmux_tlv_param_find(char *key, char **param)
+static struct tlv_group *robosoft_tlv_param_find(char *key, char **param)
 {
 	struct tlv_group *tlvg;
 
@@ -315,7 +316,7 @@ static struct tlv_group *firmux_tlv_param_find(char *key, char **param)
 	return tlvg;
 }
 
-static enum tlv_code firmux_tlv_param_slot(struct tlv_store *tlvs, struct tlv_group *tlvg, char *param, int exact)
+static enum tlv_code robosoft_tlv_param_slot(struct tlv_store *tlvs, struct tlv_group *tlvg, char *param, int exact)
 {
 	enum tlv_code code, slot = EEPROM_ATTR_NONE;
 	char *extra;
@@ -360,7 +361,7 @@ static enum tlv_code firmux_tlv_param_slot(struct tlv_store *tlvs, struct tlv_gr
 	return slot;
 }
 
-static int firmux_tlv_prop_check(char *key, char *in)
+static int robosoft_tlv_prop_check(char *key, char *in)
 {
 	struct tlv_property *tlvp;
 	struct tlv_group *tlvg;
@@ -376,7 +377,7 @@ static int firmux_tlv_prop_check(char *key, char *in)
 		len = strlen(in);
 	}
 
-	tlvg = firmux_tlv_param_find(key, &param);
+	tlvg = robosoft_tlv_param_find(key, &param);
 	if (tlvg) {
 		if (!val)
 			return 0;
@@ -385,7 +386,7 @@ static int firmux_tlv_prop_check(char *key, char *in)
 		goto out;
 	}
 
-	tlvp = firmux_tlv_prop_find(key);
+	tlvp = robosoft_tlv_prop_find(key);
 	if (tlvp) {
 		if (!val)
 			return 0;
@@ -401,7 +402,7 @@ out:
 	return ret;
 }
 
-static struct tlv_property *firmux_tlv_prop_format(struct tlv_field *tlv, char **key)
+static struct tlv_property *robosoft_tlv_prop_format(struct tlv_field *tlv, char **key)
 {
 	struct tlv_property *tlvp;
 
@@ -427,7 +428,7 @@ static struct tlv_property *firmux_tlv_prop_format(struct tlv_field *tlv, char *
 	return tlvp;
 }
 
-static struct tlv_group *firmux_tlv_param_format(struct tlv_field *tlv, char **key)
+static struct tlv_group *robosoft_tlv_param_format(struct tlv_field *tlv, char **key)
 {
 	struct tlv_group *tlvg;
 	ssize_t len;
@@ -459,7 +460,7 @@ static struct tlv_group *firmux_tlv_param_format(struct tlv_field *tlv, char **k
 	return tlvg;
 }
 
-static int firmux_tlv_prop_store(void *sp, char *key, char *in)
+static int robosoft_tlv_prop_store(void *sp, char *key, char *in)
 {
 	struct tlv_store *tlvs = (struct tlv_store *)sp;
 	struct tlv_property *tlvp;
@@ -471,13 +472,13 @@ static int firmux_tlv_prop_store(void *sp, char *key, char *in)
 	ssize_t size, len;
 	int ret = -1;
 
-	if ((tlvg = firmux_tlv_param_find(key, &param))) {
-		code = firmux_tlv_param_slot(tlvs, tlvg, param, 0);
+	if ((tlvg = robosoft_tlv_param_find(key, &param))) {
+		code = robosoft_tlv_param_slot(tlvs, tlvg, param, 0);
 		if (code == EEPROM_ATTR_NONE) {
 			ldebug("Failed TLV param '%s' slot lookup", param);
 			return -1;
 		}
-	} else if ((tlvp = firmux_tlv_prop_find(key))) {
+	} else if ((tlvp = robosoft_tlv_prop_find(key))) {
 		code = tlvp->tlvp_id;
 	} else {
 		ldebug("Invalid TLV property '%s'", key);
@@ -522,7 +523,7 @@ fail:
 	return ret;
 }
 
-static int firmux_tlv_print_all(struct tlv_store *tlvs)
+static int robosoft_tlv_print_all(struct tlv_store *tlvs)
 {
 	struct tlv_iterator iter;
 	struct tlv_field *tlv;
@@ -540,7 +541,7 @@ static int firmux_tlv_print_all(struct tlv_store *tlvs)
 		val = NULL;
 		key = NULL;
 
-		if ((tlvg = firmux_tlv_param_format(tlv, &key))) {
+		if ((tlvg = robosoft_tlv_param_format(tlv, &key))) {
 			len = tlvg->tlvg_format((void **)&val, tlv->value, ntohs(tlv->length), NULL);
 			if (len < 0) {
 				lerror("Failed to format TLV param %s", key);
@@ -548,7 +549,7 @@ static int firmux_tlv_print_all(struct tlv_store *tlvs)
 				goto next;
 			}
 			spec = tlvg->tlvg_spec;
-		} else if ((tlvp = firmux_tlv_prop_format(tlv, &key))) {
+		} else if ((tlvp = robosoft_tlv_prop_format(tlv, &key))) {
 			len = tlvp->tlvp_format((void **)&val, tlv->value, ntohs(tlv->length));
 			if (len < 0) {
 				lerror("Failed to format TLV param %s", key);
@@ -573,7 +574,7 @@ next:
 	return fail;
 }
 
-static int firmux_tlv_prop_print(void *sp, char *key, char *out)
+static int robosoft_tlv_prop_print(void *sp, char *key, char *out)
 {
 	struct tlv_store *tlvs = (struct tlv_store *)sp;
 	struct tlv_property *tlvp;
@@ -586,15 +587,15 @@ static int firmux_tlv_prop_print(void *sp, char *key, char *out)
 	ssize_t size, len;
 
 	if (!key)
-		return firmux_tlv_print_all(tlvs);
+		return robosoft_tlv_print_all(tlvs);
 
-	if ((tlvg = firmux_tlv_param_find(key, &param))) {
-		code = firmux_tlv_param_slot(tlvs, tlvg, param, 1);
+	if ((tlvg = robosoft_tlv_param_find(key, &param))) {
+		code = robosoft_tlv_param_slot(tlvs, tlvg, param, 1);
 		if (code == EEPROM_ATTR_NONE) {
 			ldebug("Failed TLV param '%s' slot lookup", param);
 			return -1;
 		}
-	} else if ((tlvp = firmux_tlv_prop_find(key))) {
+	} else if ((tlvp = robosoft_tlv_prop_find(key))) {
 		code = tlvp->tlvp_id;
 	} else {
 		ldebug("Invalid TLV property '%s'", key);
@@ -643,7 +644,7 @@ static int firmux_tlv_prop_print(void *sp, char *key, char *out)
 	return 0;
 }
 
-static void firmux_tlv_prop_list(void)
+static void robosoft_tlv_prop_list(void)
 {
 	struct tlv_property *tlvp;
 	struct tlv_group *tlvg;
@@ -661,7 +662,7 @@ static void firmux_tlv_prop_list(void)
 	}
 }
 
-static int firmux_tlv_flush(void *sp)
+static int robosoft_tlv_flush(void *sp)
 {
 	struct tlv_store *tlvs = sp;
 	struct tlv_header *tlvh = tlvs->base - sizeof(*tlvh);
@@ -677,12 +678,12 @@ static int firmux_tlv_flush(void *sp)
 	return 0;
 }
 
-static void firmux_tlv_free(void *sp)
+static void robosoft_tlv_free(void *sp)
 {
 	tlvs_free((struct tlv_store *)sp);
 }
 
-static void *firmux_tlv_init(struct storage_device *dev, int force)
+static void *robosoft_tlv_init(struct storage_device *dev, int force)
 {
 	struct tlv_header *tlvh;
 	struct tlv_store *tlvs;
@@ -740,19 +741,19 @@ done:
 	return tlvs;
 }
 
-static struct storage_protocol firmux_tlv_model = {
-	.name = "firmux-tlv",
+static struct storage_protocol robosoft_tlv_model = {
+	.name = "robosoft-tlv",
 	.def = 1,
-	.init = firmux_tlv_init,
-	.free = firmux_tlv_free,
-	.list = firmux_tlv_prop_list,
-	.check = firmux_tlv_prop_check,
-	.print = firmux_tlv_prop_print,
-	.store = firmux_tlv_prop_store,
-	.flush = firmux_tlv_flush,
+	.init = robosoft_tlv_init,
+	.free = robosoft_tlv_free,
+	.list = robosoft_tlv_prop_list,
+	.check = robosoft_tlv_prop_check,
+	.print = robosoft_tlv_prop_print,
+	.store = robosoft_tlv_prop_store,
+	.flush = robosoft_tlv_flush,
 };
 
-static void __attribute__((constructor)) firmux_tlv_register(void)
+static void __attribute__((constructor)) robosoft_tlv_register(void)
 {
-	eeprom_register(&firmux_tlv_model);
+	eeprom_register(&robosoft_tlv_model);
 }
