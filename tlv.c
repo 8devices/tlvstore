@@ -199,15 +199,15 @@ int tlvs_set(struct tlv_store *tlvs, uint8_t type, uint16_t length, void *value)
 
 	tlvs->frag = 1;
 
-	memset(tlv->value, TLV_PAD, ntohs(tlv->length));
-	if (tlv->length > length) {
+	if (ntohs(tlv->length) > length) {
+		memset(tlv->value, TLV_PAD, ntohs(tlv->length));
 		memcpy(tlv->value, value, length);
 		tlv->length = htons(length);
 		tlvs->dirty = 1;
 		TLV_DEBUG("Set", tlv);
 		return 0;
-	} else if (tlv->length < length) {
-		memset(tlv, TLV_PAD, sizeof(*tlv));
+	} else if (ntohs(tlv->length) < length) {
+		memset(tlv, TLV_PAD, sizeof(*tlv) + ntohs(tlv->length));
 		return tlvs_add_tail(tlvs, type, length, value);
 	}
 }
