@@ -16,6 +16,7 @@ void storage_close(struct storage_device *dev)
 	if (munmap(dev->base, dev->size))
 		perror("munmap() failed");
 	close(dev->fd);
+	free(dev);
 }
 
 struct storage_device *storage_open(const char *file_name, int pref_size)
@@ -55,7 +56,7 @@ struct storage_device *storage_open(const char *file_name, int pref_size)
 	}
 
 	if (!file_size) {
-		fprintf(stderr, "Invalid storage size\n");
+		lerror("Invalid storage size");
 		goto fail;
 	}
 
@@ -71,10 +72,11 @@ struct storage_device *storage_open(const char *file_name, int pref_size)
 	while (last_size < pref_size)
 		((char *)dev->base)[last_size++] = 0xFF;
 
+	ldebug("Storage buffer initialized, size %d", file_size);
+
 	return dev;
 fail:
-	if (dev)
-		free(dev);
+	free(dev);
 	if (fd != -1)
 		close(fd);
 	if (file_init)

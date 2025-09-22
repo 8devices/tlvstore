@@ -21,7 +21,10 @@ CONFIG_DM_ROBOSOFT = y
 
 SRCS-$(CONFIG_DM_TOBUFI_LEGACY) += datamodel-toblse-tlv.o
 SRCS-$(CONFIG_DM_ROBOSOFT) += datamodel-robosoft-tlv.o
-SRCS = $(SRCS-y) protocol.o char.o tlv.o utils.o crc.o main.o
+SRCS-$(CONFIG_IO_MMAP) += char-mmap.o
+# XXX: fallback to buffered write-back when mmap is not enable
+SRCS-$(if $(CONFIG_IO_MMAP),,y) += char-bwb.o
+SRCS = $(SRCS-y) protocol.o tlv.o utils.o crc.o main.o
 OBJS = $(SRCS:%.c=%.o)
 
 .PHONY: all
