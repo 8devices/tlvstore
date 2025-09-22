@@ -15,6 +15,15 @@ CFLAGS += -DHAVE_LZMA_H
 LDLIBS += -llzma
 endif
 
+# XXX: default supported datamodels configuration
+CONFIG_DM_TOBUFI_LEGACY = y
+CONFIG_DM_ROBOSOFT = y
+
+SRCS-$(CONFIG_DM_TOBUFI_LEGACY) += datamodel-toblse-tlv.o
+SRCS-$(CONFIG_DM_ROBOSOFT) += datamodel-robosoft-tlv.o
+SRCS = $(SRCS-y) protocol.o char.o tlv.o utils.o crc.o main.o
+OBJS = $(SRCS:%.c=%.o)
+
 .PHONY: all
 all: tlvs
 
@@ -26,19 +35,8 @@ clean:
 install: tlvs
 	install -Dm755 tlvs $(PREFIX)/usr/bin/tlvs
 
-tlvs: datamodel-robosoft-tlv.o datamodel-toblse-tlv.o protocol.o char.o tlv.o utils.o crc.o main.o
+tlvs: $(SRCS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(CFLAGS-$<) -c -o $@ $<
-
-main.o: main.c
-protocol.o: protocol.c
-tlv.o: tlv.c
-char.o: char.c
-utils.o: utils.c
-crc.o: crc.c
-datamodel-firmux-struct.o: datamodel-firmux-struct.c
-datamodel-firmux-fields.o: datamodel-firmux-fields.c
-datamodel-robosft-tlv.o: datamodel-robosoft-tlv.c
-datamodel-toblse-tlv.o: datamodel-toblse-tlv.c
