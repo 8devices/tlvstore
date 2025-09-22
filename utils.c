@@ -97,9 +97,16 @@ ssize_t acopy_data(void **data_out, void *data_in, size_t size_in)
 ssize_t aparse_byte_triplet(void **data_out, void *data_in, size_t size_in)
 {
 	unsigned char *buf;
-	unsigned char year, month, day;
+	unsigned short year;
+	unsigned char month, day;
 
-	if (sscanf(data_in, "%hhu-%hhu-%hhu", &year, &month, &day) < 3)
+	if (sscanf(data_in, "%hu-%hhu-%hhu", &year, &month, &day) < 3)
+		return -1;
+
+	/* Support both 2-digit and 4-digit year formats */
+	if (year >= 2000)
+		year -= 2000;
+	else if (year > 0xff)
 		return -1;
 
 	if (!data_out)
@@ -109,7 +116,7 @@ ssize_t aparse_byte_triplet(void **data_out, void *data_in, size_t size_in)
 	if (!buf)
 		return -1;
 
-	buf[0] = year;
+	buf[0] = (unsigned char)year;
 	buf[1] = month;
 	buf[2] = day;
 	*data_out = buf;
@@ -118,7 +125,7 @@ ssize_t aparse_byte_triplet(void **data_out, void *data_in, size_t size_in)
 
 ssize_t aformat_byte_triplet(void **data_out, void *data_in, size_t size_in)
 {
-#define DATE_STR_LEN 9
+#define DATE_STR_LEN 11
 	unsigned char *buf;
 	char *line;
 	int cnt;
@@ -131,7 +138,7 @@ ssize_t aformat_byte_triplet(void **data_out, void *data_in, size_t size_in)
 		return -1;
 
 	buf = data_in;
-	cnt = snprintf(line, DATE_STR_LEN, "%u-%u-%u", buf[0], buf[1], buf[2]);
+	cnt = snprintf(line, DATE_STR_LEN, "%04u-%02u-%02u", buf[0] + 2000, buf[1], buf[2]);
 	*data_out = line;
 	return cnt;
 }
