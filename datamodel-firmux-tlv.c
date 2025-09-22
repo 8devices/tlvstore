@@ -708,9 +708,16 @@ static void *firmux_tlv_init(struct storage_device *dev, int force)
 		len++;
 	}
 
+	if (force) {
+		ldebug("Reinitialising non-empty storage");
+		/* XXX: TLV management module relies solely on buffer
+		 * data to find the spare slot to set data, therefore
+		 * memory has to be whiped out before passing it for
+		 * TLV processing. */
+		memset(dev->base, 0xFF, dev->size);
+	}
+
 	if (empty || force) {
-		if (force)
-			ldebug("Reinitialising non-empty storage");
 		memset(tlvh, 0, sizeof(*tlvh));
 		memcpy(tlvh->magic, EEPROM_MAGIC, sizeof(tlvh->magic));
 		tlvh->version = EEPROM_VERSION;
