@@ -31,6 +31,8 @@ static struct storage_device *dev;
 static struct storage_protocol *proto;
 static int op;
 static int compat;
+/* Global log level - default to WARNING */
+int g_log_level = LOG_WARNING;
 
 int tlvstore_parse_line(char *arg)
 {
@@ -192,6 +194,7 @@ static void tlvstore_usage(void)
 	fprintf(stderr, "Usage: tlvstore [options] <key>[=@value>] ...\n"
 			"  -F, --store-file <file-name>     Storage file path\n"
 			"  -S, --store-size <file-size>     Preferred storage file size\n"
+			"  -v, --verbose                    Increase verbosity\n"
 			"  -f, --force                      Force initialise storage\n"
 			"  -c, --compat                     Compatibility retrieve avilable params\n"
 			"  -g, --get                        Get specified keys or all keys when no specified\n"
@@ -204,6 +207,7 @@ static struct option tlvstore_options[] =
 {
 	{ "store-size",   1, 0, 'S' },
 	{ "store-file",   1, 0, 'F' },
+	{ "verbose",      0, 0, 'v' },
 	{ "force",        0, 0, 'f' },
 	{ "compat",       0, 0, 'c' },
 	{ "get",          0, 0, 'g' },
@@ -220,13 +224,17 @@ int main(int argc, char *argv[])
 	int store_size = TLVS_DEFAULT_SIZE;
 	int force = 0;
 
-	while ((opt = getopt_long(argc, argv, "F:S:hfcgsl", tlvstore_options, &index)) != -1) {
+	while ((opt = getopt_long(argc, argv, "F:S:hvfcgsl", tlvstore_options, &index)) != -1) {
 		switch (opt) {
 		case 'F':
 			store_file = strdup(optarg);
 			break;
 		case 'S':
 			store_size = atoi(optarg);
+			break;
+		case 'v':
+			if (g_log_level)
+				g_log_level--;
 			break;
 		case 'f':
 			force = 1;

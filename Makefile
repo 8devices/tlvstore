@@ -1,6 +1,9 @@
 ifneq ($(DEBUG),)
 CFLAGS += -DDEBUG -g
 endif
+ifneq ($(NODEBUG),)
+CFLAGS += -DDEBUG_STRIP
+endif
 ifneq ($(CONFIG_TLVS_FILE),)
 CFLAGS += -DTLVS_DEFAULT_FILE=\"$(CONFIG_TLVS_FILE)\"
 endif
