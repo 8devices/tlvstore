@@ -10,6 +10,7 @@
 #endif
 
 #define linfo(fmt, ...) fprintf(stderr, "INFO: " fmt "\n", ##__VA_ARGS__)
+#define lwarning(fmt, ...) fprintf(stderr, "WARNING: " fmt "\n", ##__VA_ARGS__)
 #define lerror(fmt, ...) fprintf(stderr, "ERROR: " fmt "\n", ##__VA_ARGS__)
 
 #endif /* __LOG_H */

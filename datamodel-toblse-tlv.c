@@ -464,7 +464,7 @@ static void *toblse_tlv_init(struct storage_device *dev, int force)
 
 	crc = crc_32((unsigned char *)dev->base + sizeof(*hdr), ntohl(hdr->totallen));
 	if (crc != ntohl(hdr->crc32)) {
-		lerror("Invalid storage crc\n");
+		lerror("Storage CRC validation failed (expected 0x%08x, got 0x%08x)", ntohl(hdr->crc32), crc);
 		return NULL;
 	}
 

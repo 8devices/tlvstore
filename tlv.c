@@ -156,8 +156,10 @@ static int tlvs_add_tail(struct tlv_store *tlvs, uint8_t type, uint16_t length, 
 	struct tlv_field *tlv;
 
 	tlv = tlvs_gap(tlvs, length);
-	if (!tlv)
+	if (!tlv) {
+		fprintf(stderr, "TLV gap not found, type 0x%02x, length %d\n", type, length);
 		return -ENOSPC;
+	}
 
 	tlv->type = type;
 	tlv->length = htons(length);

@@ -143,13 +143,13 @@ int tlvstore_export_params(void)
 		ret = eeprom_export(proto, pl->key, pl->val);
 		if (ret < 0 || (!compat && ret)) {
 			if (pl->val && pl->val[0] == '@')
-				lerror("Failed to export '%s' to '%s'",
+				lwarning("Failed to export '%s' to '%s'",
 				       pl->key, pl->val);
 			else if (pl->val)
-				lerror("Failed to export '%s' as '%s'",
+				lwarning("Failed to export '%s' as '%s'",
 				       pl->key, pl->val);
 			else
-				lerror("Failed to export '%s'", pl->key);
+				lwarning("Failed to export '%s'", pl->key);
 			fail++;
 		}
 		pl = pl->next;
@@ -169,7 +169,7 @@ int tlvstore_import_params(void)
 	ldebug("Starting parameters import");
 	while (pl) {
 		if (eeprom_import(proto, pl->key, pl->val) < 0) {
-			lerror("Failed to import '%s' value '%s'", pl->key, pl->val);
+			lwarning("Failed to import '%s' value '%s'", pl->key, pl->val);
 			fail++;
 		}
 		pl = pl->next;
@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	ldebug("Opened storage memory file %s at %p, size: %zi", store_file, dev->base, dev->size);
+	linfo("Opened storage file '%s' (%zu bytes)", store_file, dev->size);
 
 	proto = eeprom_init(dev, force);
 	if (!proto) {
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	ldebug("Initialized storage protocol '%s'", proto->name);
+	linfo("Initialized storage protocol '%s'", proto->name);
 
 	if (tlvstore_parse_params(argc - optind, &argv[optind])) {
 		tlvstore_usage();
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
 		if (!tlvstore_import_params())
 			ret = 0;
 	} else {
-		linfo("No operation specified");
+		lwarning("No operation specified");
 	}
 
 	eeprom_free(proto);

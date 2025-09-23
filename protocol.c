@@ -24,7 +24,7 @@ int eeprom_register(struct storage_protocol *proto)
 			return -1;
 		}
 
-		ldebug("Registering default protocol: %s", proto->name);
+		linfo("Registering default protocol: %s", proto->name);
 		proto_default = proto;
 		return 0;
 	}

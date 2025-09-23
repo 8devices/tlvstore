@@ -266,7 +266,7 @@ static void *firmux_fields_init(struct storage_device *dev, int force)
 done:
 	crc = crc_32(dev->base + sizeof(*fh), sizeof(struct firmux_fields));
 	if (crc != ntohl(fh->crc)) {
-		lerror("Invalid storage crc\n");
+		lerror("Storage CRC validation failed (expected 0x%08x, got 0x%08x)", ntohl(fh->crc), crc);
 		return NULL;
 	}
 
