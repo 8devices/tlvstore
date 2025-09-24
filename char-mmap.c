@@ -13,20 +13,20 @@
 void storage_close(struct storage_device *dev)
 {
 	fsync(dev->fd);
-	if (munmap(dev->base, dev->size))
+	if (munmap(dev->orig_base, dev->orig_size))
 		perror("munmap() failed");
 	close(dev->fd);
 	free(dev);
 }
 
-struct storage_device *storage_open(const char *file_name, int pref_size)
+struct storage_device *storage_open(const char *file_name, int pref_size, int data_offset)
 {
 	struct storage_device *dev;
 	struct stat fs;
 	int fd = -1;
 	int file_init, file_size, last_size;
 
-	ldebug("Opening storage memory file %s, preferred size: %d", file_name, pref_size);
+	ldebug("Opening storage memory file %s, preferred size: %d, offset: %d", file_name, pref_size, data_offset);
 
 	dev = malloc(sizeof(*dev));
 	if (!dev) {
@@ -49,23 +49,27 @@ struct storage_device *storage_open(const char *file_name, int pref_size)
 
 	file_size = fs.st_size;
 	if (pref_size) {
-		if (ftruncate(fd, pref_size))
+		if (ftruncate(fd, pref_size + data_offset))
 			perror("ftruncate() failed");
 		else
 			file_size = pref_size;
 	}
 
-	if (!file_size) {
-		lerror("Invalid storage size");
+	if (file_size <= data_offset) {
+		lerror("Insufficient storage size");
 		goto fail;
 	}
 
 	dev->fd = fd;
-	dev->size = file_size;
-	dev->base = mmap(NULL, file_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	dev->size = file_size - data_offset;
+	dev->offset = data_offset;
+	dev->orig_base = mmap(NULL, file_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	dev->orig_size = file_size;
 	if (dev->base == MAP_FAILED) {
 		perror("mmap() failed");
 		goto fail;
+	} else {
+		dev->base = (char *)dev->orig_base + data_offset;
 	}
 
 	last_size = fs.st_size;

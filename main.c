@@ -15,6 +15,9 @@
 #ifndef TLVS_DEFAULT_SIZE
 #define TLVS_DEFAULT_SIZE 0
 #endif
+#ifndef TLVS_DEFAULT_OFFSET
+#define TLVS_DEFAULT_OFFSET 0
+#endif
 
 #define OP_LIST 1
 #define OP_GET 2
@@ -194,6 +197,7 @@ static void tlvstore_usage(void)
 	fprintf(stderr, "Usage: tlvstore [options] <key>[=@value>] ...\n"
 			"  -F, --store-file <file-name>     Storage file path\n"
 			"  -S, --store-size <file-size>     Preferred storage file size\n"
+			"  -O, --store-offset <file-offset> Storage file data offset\n"
 			"  -v, --verbose                    Increase verbosity\n"
 			"  -f, --force                      Force initialise storage\n"
 			"  -c, --compat                     Compatibility retrieve avilable params\n"
@@ -207,6 +211,7 @@ static struct option tlvstore_options[] =
 {
 	{ "store-size",   1, 0, 'S' },
 	{ "store-file",   1, 0, 'F' },
+	{ "store-offset", 1, 0, 'O' },
 	{ "verbose",      0, 0, 'v' },
 	{ "force",        0, 0, 'f' },
 	{ "compat",       0, 0, 'c' },
@@ -220,17 +225,21 @@ int main(int argc, char *argv[])
 {
 	int opt, index;
 	int ret = 1;
-	char *store_file = TLVS_DEFAULT_FILE;
-	int store_size = TLVS_DEFAULT_SIZE;
+	char *store_file = NULL;
+	int store_size = 0;
+	int store_offset = 0;
 	int force = 0;
 
-	while ((opt = getopt_long(argc, argv, "F:S:hvfcgsl", tlvstore_options, &index)) != -1) {
+	while ((opt = getopt_long(argc, argv, "F:S:O:hvfcgsl", tlvstore_options, &index)) != -1) {
 		switch (opt) {
 		case 'F':
 			store_file = strdup(optarg);
 			break;
 		case 'S':
 			store_size = atoi(optarg);
+			break;
+		case 'O':
+			store_offset = atoi(optarg);
 			break;
 		case 'v':
 			if (g_log_level)
@@ -258,13 +267,24 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	/* Initialise build-time defaults only when default
+	 * storage file is used. Even in that case allow to
+	 * override custom storage size and offset when set. */
 	if (!store_file) {
-		fprintf(stderr, "Storage file not specified\n");
+		store_file = TLVS_DEFAULT_FILE;
+		if (!store_size)
+			store_size = TLVS_DEFAULT_SIZE;
+		if (!store_offset)
+			store_offset = TLVS_DEFAULT_OFFSET;
+	}
+
+	if (access(store_file, F_OK) && !store_size) {
+		fprintf(stderr, "Storage file does not exist, specify storage size to initialise\n");
 		tlvstore_usage();
 		exit(EXIT_FAILURE);
 	}
 
-	dev = storage_open(store_file, store_size);
+	dev = storage_open(store_file, store_size, store_offset);
 	if (!dev) {
 		fprintf(stderr, "Failed to initialize '%s' storage file\n", store_file);
 		exit(EXIT_FAILURE);
