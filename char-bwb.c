@@ -14,6 +14,7 @@
 static ssize_t storage_read(struct storage_device *dev, void *buf, size_t count, size_t offset)
 {
 	ssize_t bytes_read;
+	ssize_t total_read = 0;
 
 	if (offset >= dev->size) {
 		lerror("Read offset %zu exceeds storage size %zu", offset, dev->size);
@@ -31,19 +32,32 @@ static ssize_t storage_read(struct storage_device *dev, void *buf, size_t count,
 		return -1;
 	}
 
-	bytes_read = read(dev->fd, buf, count);
-	if (bytes_read == -1) {
-		lerror("read() failed %zu bytes at offset %zu: %s", count, offset, strerror(errno));
+	while (total_read < count) {
+		bytes_read = read(dev->fd, (char *)buf + total_read, count - total_read);
+		if (bytes_read == -1) {
+			lerror("read() failed %zu bytes at offset %zu: %s", count - total_read,
+			       dev->offset + offset + total_read, strerror(errno));
+			break;
+		} else if (bytes_read == 0) {
+			break;
+		}
+
+		total_read += bytes_read;
+	}
+
+	if (bytes_read == -1 && total_read == 0) {
+		lerror("read() failed %zu bytes at offset %zu", count, offset);
 		return -1;
 	}
 
-	ldebug("Read %zd bytes from file at offset %zu", bytes_read, offset);
-	return bytes_read;
+	ldebug("Read %zd bytes from file at offset %zu", total_read, offset);
+	return total_read;
 }
 
 static ssize_t storage_write(struct storage_device *dev, const void *buf, size_t count, size_t offset)
 {
 	ssize_t bytes_written;
+	ssize_t total_written = 0;
 
 	if (offset >= dev->size) {
 		lerror("Write offset %zu exceeds storage size %zu", offset, dev->size);
@@ -57,22 +71,34 @@ static ssize_t storage_write(struct storage_device *dev, const void *buf, size_t
 
 	/* Seek to the actual file position (device offset + requested offset) */
 	if (lseek(dev->fd, dev->offset + offset, SEEK_SET) == -1) {
-		lerror("lseek() faied to offset %zu: %s", dev->offset + offset, strerror(errno));
+		lerror("lseek() failed to offset %zu: %s", dev->offset + offset, strerror(errno));
 		return -1;
 	}
 
-	bytes_written = write(dev->fd, buf, count);
-	if (bytes_written == -1) {
-		lerror("write() failed %zu bytes at offset %zu: %s", count, offset, strerror(errno));
+	while (total_written < count) {
+		bytes_written = write(dev->fd, (const char *)buf + total_written, count - total_written);
+		if (bytes_written == -1) {
+			lerror("write() failed %zu bytes at offset %zu: %s", count - total_written,
+			       dev->offset + offset + total_written, strerror(errno));
+			break;
+		} else if (bytes_written == 0) {
+			break;
+		}
+
+		total_written += bytes_written;
+	}
+
+	if (bytes_written == -1 && total_written == 0) {
+		lerror("write() failed %zu bytes at offset: %zu", count, offset);
 		return -1;
 	}
 
-	if (bytes_written != (ssize_t)count) {
-		lerror("Short write %zd / %zu bytes at offset %zu", bytes_written, count, offset);
+	if (total_written != (ssize_t)count) {
+		lerror("Short write %zd / %zu bytes at offset %zu", total_written, count, offset);
 	}
 
-	ldebug("Wrote %zd bytes to file at offset %zu", bytes_written, offset);
-	return bytes_written;
+	ldebug("Wrote %zd bytes to file at offset %zu", total_written, offset);
+	return total_written;
 }
 
 static void storage_writeback(struct storage_device *dev)
