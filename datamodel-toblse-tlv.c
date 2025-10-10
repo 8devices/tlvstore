@@ -254,6 +254,10 @@ static int toblse_tlv_prop_print_all(void *sp)
 				continue;
 			}
 			tmp_len = strlen("GENERIC_MAC_") + len - 6 + 1;
+			/* If key points to a static string (key_len == 0), we need to allocate new memory */
+			if (key_len == 0)
+				key = NULL;
+
 			key = realloc(key, tmp_len);
 			if (!key) {
 				perror("realloc() failed");
