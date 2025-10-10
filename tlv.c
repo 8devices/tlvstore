@@ -321,6 +321,10 @@ struct tlv_field *tlvs_iter_next(struct tlv_iterator *iter)
 		/* Move cursor to next entry for subsequent calls */
 		iter->curr += ntohs(tlv->length) + sizeof(struct tlv_field);
 
+		/* Validate that the entire TLV entry (header + value) fits in the buffer */
+		if (iter->curr > last)
+			return NULL;
+
 		return tlv;
 	}
 
