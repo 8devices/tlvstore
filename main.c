@@ -228,6 +228,8 @@ int main(int argc, char *argv[])
 	char *store_file = NULL;
 	int store_size = 0;
 	int store_offset = 0;
+	int user_size = 0;
+	int user_offset = 0;
 	int force = 0;
 
 	while ((opt = getopt_long(argc, argv, "F:S:O:hvfcgsl", tlvstore_options, &index)) != -1) {
@@ -237,9 +239,11 @@ int main(int argc, char *argv[])
 			break;
 		case 'S':
 			store_size = atoi(optarg);
+			user_size = 1;
 			break;
 		case 'O':
 			store_offset = atoi(optarg);
+			user_offset = 1;
 			break;
 		case 'v':
 			if (g_log_level)
@@ -272,9 +276,9 @@ int main(int argc, char *argv[])
 	 * override custom storage size and offset when set. */
 	if (!store_file) {
 		store_file = TLVS_DEFAULT_FILE;
-		if (!store_size)
+		if (!user_size)
 			store_size = TLVS_DEFAULT_SIZE;
-		if (!store_offset)
+		if (!user_offset)
 			store_offset = TLVS_DEFAULT_OFFSET;
 	}
 
