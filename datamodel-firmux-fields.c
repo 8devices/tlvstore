@@ -28,8 +28,8 @@ static struct firmux_property plain_props[] = {
 	{ "SERIAL_NO", offsetof(struct firmux_fields, serial_no), propsizeof(struct firmux_fields, serial_no), acopy_text, acopy_text },
 	{ "PCB_NAME", offsetof(struct firmux_fields, pcb_name), propsizeof(struct firmux_fields, pcb_name), acopy_text, acopy_text },
 	{ "PCB_REVISION", offsetof(struct firmux_fields, pcb_revision), propsizeof(struct firmux_fields, pcb_revision), acopy_text, acopy_text },
-	{ "PCB_PRDATE", offsetof(struct firmux_fields, pcb_prdate), propsizeof(struct firmux_fields, pcb_prdate), aparse_byte_triplet, aformat_byte_triplet },
-	{ "PCB_PRLOCATION", offsetof(struct firmux_fields, pcb_prlocation), propsizeof(struct firmux_fields, pcb_prlocation), acopy_text, acopy_text },
+	{ "PCB_PROD_DATE", offsetof(struct firmux_fields, pcb_prdate), propsizeof(struct firmux_fields, pcb_prdate), aparse_byte_triplet, aformat_byte_triplet },
+	{ "PCB_PROD_LOCATION", offsetof(struct firmux_fields, pcb_prlocation), propsizeof(struct firmux_fields, pcb_prlocation), acopy_text, acopy_text },
 	{ "PCB_SN", offsetof(struct firmux_fields, pcb_serial), propsizeof(struct firmux_fields, pcb_serial), acopy_text, acopy_text },
 	{ "MAC_ADDR", offsetof(struct firmux_fields, mac_addr), propsizeof(struct firmux_fields, mac_addr), aparse_mac_address, aformat_mac_address },
 	{ NULL, 0, 0, NULL, NULL }

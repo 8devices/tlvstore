@@ -33,9 +33,9 @@ static int firmux_struct_prop_is_set(void *sp, char *key)
 		return !bempty_data(model->pcb_name, sizeof(model->pcb_name));
 	} else if (!strcmp(key, "PCB_REVISION")) {
 		return !bempty_data(model->pcb_revision, sizeof(model->pcb_revision));
-	} else if (!strcmp(key, "PCB_PRDATE")) {
+	} else if (!strcmp(key, "PCB_PROD_DATE")) {
 		return !bempty_data(model->pcb_prdate, sizeof(model->pcb_prdate));
-	} else if (!strcmp(key, "PCB_PRLOCATION")) {
+	} else if (!strcmp(key, "PCB_PROD_LOCATION")) {
 		return !bempty_data(model->pcb_prlocation, sizeof(model->pcb_prlocation));
 	} else if (!strcmp(key, "PCB_SN")) {
 		return !bempty_data(model->pcb_serial, sizeof(model->pcb_serial));
@@ -76,10 +76,10 @@ static int firmux_struct_prop_check(char *key, char *in)
 		ret = sizeof(((struct firmux_fields *)0)->pcb_name) >= len;
 	} else if (!strcmp(key, "PCB_REVISION")) {
 		ret = sizeof(((struct firmux_fields *)0)->pcb_revision) >= len;
-	} else if (!strcmp(key, "PCB_PRDATE")) {
+	} else if (!strcmp(key, "PCB_PROD_DATE")) {
 		unsigned char date[3];
 		return sscanf(val, "%hhu-%hhu-%hhu", &date[0], &date[1], &date[2]) != 3;
-	} else if (!strcmp(key, "PCB_PRLOCATION")) {
+	} else if (!strcmp(key, "PCB_PROD_LOCATION")) {
 		ret = sizeof(((struct firmux_fields *)0)->pcb_prlocation) >= len;
 	} else if (!strcmp(key, "PCB_SN")) {
 		ret = sizeof(((struct firmux_fields *)0)->pcb_serial) >= len;
@@ -124,7 +124,7 @@ static char *_firmux_struct_prop_print(void *sp, char *key)
 			return NULL;
 
 		return bcopy_text(model->pcb_revision, sizeof(model->pcb_revision));
-	} else if (!strcmp(key, "PCB_PRDATE")) {
+	} else if (!strcmp(key, "PCB_PROD_DATE")) {
 		static char date_str[10];
 		if (bempty_data(model->pcb_prdate, sizeof(model->pcb_prdate)))
 			return NULL;
@@ -135,7 +135,7 @@ static char *_firmux_struct_prop_print(void *sp, char *key)
 			 model->pcb_prdate[2]);
 
 		return date_str;
-	} else if (!strcmp(key, "PCB_PRLOCATION")) {
+	} else if (!strcmp(key, "PCB_PROD_LOCATION")) {
 		if (bempty_data(model->pcb_prlocation, sizeof(model->pcb_prlocation)))
 			return NULL;
 
@@ -190,14 +190,14 @@ static int firmux_struct_prop_print_all(void *sp)
 		data_dump("PCB_REVISION", val, strlen(val));
 	}
 
-	val = _firmux_struct_prop_print(sp, "PCB_PRDATE");
+	val = _firmux_struct_prop_print(sp, "PCB_PROD_DATE");
 	if (val) {
-		data_dump("PCB_PRDATE", val, strlen(val));
+		data_dump("PCB_PROD_DATE", val, strlen(val));
 	}
 
-	val = _firmux_struct_prop_print(sp, "PCB_PRLOCATION");
+	val = _firmux_struct_prop_print(sp, "PCB_PROD_LOCATION");
 	if (val) {
-		data_dump("PCB_PRLOCATION", val, strlen(val));
+		data_dump("PCB_PROD_LOCATION", val, strlen(val));
 	}
 
 	val = _firmux_struct_prop_print(sp, "PCB_SN");
@@ -266,13 +266,13 @@ static int _firmux_struct_prop_store(void *sp, char *key, char *val, size_t len)
 			return -1;
 
 		strcpy(model->pcb_revision, val);
-	} else if (!strcmp(key, "PCB_PRDATE")) {
+	} else if (!strcmp(key, "PCB_PROD_DATE")) {
 		unsigned char date[3];
 		if (sscanf(val, "%hhu-%hhu-%hhu", &date[0], &date[1], &date[2]) != 3)
 			return -1;
 
 		memcpy(model->pcb_prdate, date, sizeof(model->pcb_prdate));
-	} else if (!strcmp(key, "PCB_PRLOCATION")) {
+	} else if (!strcmp(key, "PCB_PROD_LOCATION")) {
 		if (len > sizeof(model->pcb_prlocation))
 			return -1;
 
@@ -333,8 +333,8 @@ static void firmux_struct_prop_list(void)
 	printf("SERIAL_NO\n");
 	printf("PCB_NAME\n");
 	printf("PCB_REVISION\n");
-	printf("PCB_PRDATE\n");
-	printf("PCB_PRLOCATION\n");
+	printf("PCB_PROD_DATE\n");
+	printf("PCB_PROD_LOCATION\n");
 	printf("PCB_SN\n");
 	printf("MAC_ADDR\n");
 }

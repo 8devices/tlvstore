@@ -19,8 +19,8 @@ The solution is composed of 3 main parts:
   - SERIAL_NO - Serial number of the device
   - PCB_NAME - Name of the printed circuit board
   - PCB_REVISION - Revision number of the PCB
-  - PCB_PRDATE - Production date in YY-MM-DD format
-  - PCB_PRLOCATION - Production location identifier
+  - PCB_PROD_DATE - Production date in YY-MM-DD format
+  - PCB_PROD_LOCATION - Production location identifier
   - PCB_SN - Serial number of the PCB
   - MAC_ADDR_* - MAC address for network interfaces, may be specified multiple
     times for different interfaces
@@ -35,8 +35,8 @@ The solution is composed of 3 main parts:
   - SERIAL_NO - Serial number of the device
   - PCB_NAME - Name of the printed circuit board
   - PCB_REVISION - Revision number of the PCB
-  - PCB_PRDATE - Production date in YY-MM-DD format
-  - PCB_PRLOCATION - Production location identifier
+  - PCB_PROD_DATE - Production date in YY-MM-DD format
+  - PCB_PROD_LOCATION - Production location identifier
   - PCB_SN - Serial number of the PCB
   - MAC_ADDR - MAC address of device
 
@@ -116,7 +116,7 @@ Set properties using a configuration file:
   SERIAL_NO=SN12345
   PCB_NAME=MainBoard
   PCB_REVISION=0002
-  PCB_PRDATE=24-03-15
+  PCB_PROD_DATE=24-03-15
   MAC_ADDR_eth0=aa:bb:cc:dd:ee:ff
   MAC_ADDR_wlan0=11:22:33:44:55:66
   ```

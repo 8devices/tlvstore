@@ -12,8 +12,8 @@ enum tlv_code {
 	/* PCB related attributes */
 	EEPROM_ATTR_PCB_NAME = 16,              /* char*, "FooBar" */
 	EEPROM_ATTR_PCB_REVISION,               /* char*, "0002" */
-	EEPROM_ATTR_PCB_PRDATE,                 /* time_t, seconds */
-	EEPROM_ATTR_PCB_PRLOCATION,             /* char*, "Kaunas" */
+	EEPROM_ATTR_PCB_PROD_DATE,              /* time_t, seconds */
+	EEPROM_ATTR_PCB_PROD_LOCATION,          /* char*, "Kaunas" */
 	EEPROM_ATTR_PCB_SN,                     /* char*, "" */
 
 	/* MAC infoformation */
