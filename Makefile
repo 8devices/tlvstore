@@ -27,9 +27,17 @@ CONFIG_DM_ROBOSOFT = y
 
 SRCS-$(CONFIG_DM_TOBUFI_LEGACY) += datamodel-toblse-tlv.o
 SRCS-$(CONFIG_DM_ROBOSOFT) += datamodel-robosoft-tlv.o
-SRCS-$(CONFIG_IO_MMAP) += char-mmap.o
-# XXX: fallback to buffered write-back when mmap is not enable
-SRCS-$(if $(CONFIG_IO_MMAP),,y) += char-bwb.o
+
+# Storage backend selection (only one is compiled):
+# Priority: MTD > MMAP > BWB (buffered write-back fallback)
+ifdef CONFIG_IO_MTD
+  SRCS-y += char-mtd.o
+else ifdef CONFIG_IO_MMAP
+  SRCS-y += char-mmap.o
+else
+  SRCS-y += char-bwb.o
+endif
+
 SRCS = $(SRCS-y) protocol.o tlv.o utils.o crc.o main.o
 OBJS = $(SRCS:%.c=%.o)
 

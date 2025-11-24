@@ -129,6 +129,16 @@ storage as size is detected automatically:
   tlvs -F new_storage.bin -S 8192
   ```
 
+Specify storage location using MTD partition name (requires CONFIG_IO_MTD):
+
+  ```bash
+  # Using MTD partition name
+  tlvs -F part:eeprom-data -g
+  tlvs -F part:product-info -s SERIAL_NO="SN12345"
+  ```
+
+The `part:name` format resolves MTD partition names from `/proc/mtd`.
+
 ## Build
 
 Build the utility with optional debug output, custom storage file and size:
@@ -144,6 +154,26 @@ Build the utility with optional debug output, custom storage file and size:
   | `CONFIG_TLVS_SIZE=size` | Specifies a default storage size (in bytes) |
   | `CONFIG_TLVS_COMPRESSION=<0-9>` | Specifies compression level preset (default: 9 extreme) |
   | `CONFIG_TLVS_COMPRESSION_NONE=y` | Disables compression support (default LZMA compression) |
+  | `CONFIG_IO_MTD=1` | Enables MTD partition storage backend |
+  | `CONFIG_IO_MMAP=1` | Uses memory-mapped I/O storage backend |
+
+### Storage Backend Selection
+
+The build system automatically selects one storage backend based on configuration:
+
+  1. **MTD Backend** (`char-mtd.c`) - Selected when `CONFIG_IO_MTD=1`
+     - Optimized for MTD (Memory Technology Device) flash storage
+     - Uses MTD-specific ioctls for device information
+     - Handles MTD device characteristics properly
+
+  2. **Memory-Mapped Backend** (`char-mmap.c`) - Selected when `CONFIG_IO_MMAP=1`
+     - Maps storage file directly to memory
+     - Best for systems with sufficient RAM
+
+  3. **Buffered Write-Back Backend** (`char-bwb.c`) - Default fallback
+     - Pre-allocates heap buffer for storage
+     - Intelligent write-back only writes changed data
+     - Works with regular files
 
 Install the utility with optional installation prefix:
 

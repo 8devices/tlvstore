@@ -282,12 +282,6 @@ int main(int argc, char *argv[])
 			store_offset = TLVS_DEFAULT_OFFSET;
 	}
 
-	if (access(store_file, F_OK) && !store_size) {
-		fprintf(stderr, "Storage file does not exist, specify storage size to initialise\n");
-		tlvstore_usage();
-		exit(EXIT_FAILURE);
-	}
-
 	dev = storage_open(store_file, store_size, store_offset);
 	if (!dev) {
 		fprintf(stderr, "Failed to initialize '%s' storage file\n", store_file);

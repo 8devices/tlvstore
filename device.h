@@ -6,6 +6,7 @@ struct storage_device {
 	void *base;
 	size_t size;
 	size_t offset;
+	size_t ebsize;
 	void *shadow;
 	void *orig_base;
 	size_t orig_size;
