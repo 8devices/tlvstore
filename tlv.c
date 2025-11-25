@@ -50,6 +50,11 @@ void tlvs_reset(struct tlv_store *tlvs)
 	tlvs->dirty = 1;
 }
 
+void tlvs_immutable(struct tlv_store *tlvs)
+{
+	tlvs->immutable = 1;
+}
+
 void tlvs_optimise(struct tlv_store *tlvs)
 {
 	struct tlv_field *tlv;
@@ -191,6 +196,14 @@ int tlvs_set(struct tlv_store *tlvs, uint8_t type, uint16_t length, void *value)
 	tlv = tlvs_find(tlvs, type);
 	if (!tlv)
 		return tlvs_add_tail(tlvs, type, length, value);
+
+	/* Immutable mode prevents data modification insttead zeroing
+	 * the data and appending the fields in the end of memory region. */
+	if (tlvs->immutable) {
+		tlvs->frag = 1;
+		memset(tlv, TLV_PAD, sizeof(*tlv) + ntohs(tlv->length));
+		return tlvs_add_tail(tlvs, type, length, value);
+	}
 
 	if (ntohs(tlv->length) == length) {
 		memcpy(tlv->value, value, length);

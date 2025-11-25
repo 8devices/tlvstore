@@ -15,6 +15,7 @@ struct tlv_store {
 	void *base;
 	int frag;
 	int dirty;
+	int immutable;
 };
 
 struct tlv_iterator {
@@ -25,6 +26,7 @@ struct tlv_iterator {
 struct tlv_store *tlvs_init(void *mem, int len);
 void tlvs_free(struct tlv_store *tlvs);
 void tlvs_reset(struct tlv_store *tlvs);
+void tlvs_immutable(struct tlv_store *tlvs);
 void tlvs_optimise(struct tlv_store *tlvs);
 int tlvs_add(struct tlv_store *tlvs, uint8_t type, uint16_t length, void *value);
 int tlvs_set(struct tlv_store *tlvs, uint8_t type, uint16_t length, void *value);
