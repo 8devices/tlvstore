@@ -1,6 +1,8 @@
 #ifndef __STORAGE_DEVICE_H
 #define __STORAGE_DEVICE_H
 
+#include <sys/types.h>
+
 struct storage_device {
 	int fd;
 	void *base;

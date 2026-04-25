@@ -1,6 +1,8 @@
 #ifndef __STORAGE_UTILS_H
 #define __STORAGE_UTILS_H
 
+#include <sys/types.h>
+
 void *afread(const char *file_name, size_t *file_size);
 ssize_t afwrite(const char *file_name, void *data, size_t size);
 

@@ -1,6 +1,10 @@
 #ifndef __FIRMUX_TLV_H
 #define __FIRMUX_TLV_H
 
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+
 enum tlv_code {
 	EEPROM_ATTR_NONE,
 
