@@ -79,4 +79,30 @@ struct tlv_group {
 	ssize_t (*tlvg_format)(void **data_out, void *data_in, size_t size_in, char **param);
 };
 
+/* Robosoft data-model module: a self-contained set of property and group
+ * tables. The built-in tables are one such module; additional modules
+ * (extensions) plug in at link time via the section mechanism below. Both
+ * tables are NULL-terminated and either may be NULL when unused. */
+struct robosoft_tlv_module {
+	const char *name;
+	struct tlv_property *properties;
+	struct tlv_group *groups;
+};
+
+/* Register a module by appending its address to the dedicated linker
+ * section. The compiler/linker collect all registrations at link time;
+ * GNU ld auto-creates __start_/__stop_ symbols for sections whose names
+ * are valid C identifiers. */
+#define ROBOSOFT_TLV_MODULE_REGISTER(mod)				\
+	static const struct robosoft_tlv_module *const			\
+	__robosoft_tlv_mod_##mod					\
+	__attribute__((section("robosoft_tlv_modules"), used)) = &(mod)
+
+extern const struct robosoft_tlv_module *const __start_robosoft_tlv_modules[];
+extern const struct robosoft_tlv_module *const __stop_robosoft_tlv_modules[];
+
+#define ROBOSOFT_TLV_FOREACH_MODULE(iter)				\
+	for ((iter) = __start_robosoft_tlv_modules;			\
+	     (iter) < __stop_robosoft_tlv_modules; (iter)++)
+
 #endif /* __FIRMUX_TLV_H */

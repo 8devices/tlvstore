@@ -113,7 +113,7 @@ static ssize_t tlvp_decompress_bin(void **data_out, void *data_in, size_t size_i
 #endif
 }
 
-static struct tlv_property tlv_properties[] = {
+static struct tlv_property robosoft_builtin_props[] = {
 	{ "PRODUCT_ID", EEPROM_ATTR_PRODUCT_ID, INPUT_SPEC_TXT, acopy_data, acopy_data },
 	{ "PRODUCT_NAME", EEPROM_ATTR_PRODUCT_NAME, INPUT_SPEC_TXT, acopy_data, acopy_data },
 	{ "SERIAL_NO", EEPROM_ATTR_SERIAL_NO, INPUT_SPEC_TXT, acopy_data, acopy_data },
@@ -128,10 +128,170 @@ static struct tlv_property tlv_properties[] = {
 	{ NULL, EEPROM_ATTR_NONE, INPUT_SPEC_NONE, NULL, NULL, }
 };
 
-static struct tlv_group tlv_groups[] = {
+static struct tlv_group robosoft_builtin_groups[] = {
 	{ "MAC_ADDR", EEPROM_ATTR_MAC_FIRST, EEPROM_ATTR_MAC_LAST, INPUT_SPEC_TXT, tlvp_parse_device_mac, tlvp_format_device_mac },
 	{ NULL, EEPROM_ATTR_NONE, EEPROM_ATTR_NONE, INPUT_SPEC_NONE, NULL, NULL }
 };
+
+static const struct robosoft_tlv_module robosoft_builtin_module = {
+	.name = "builtin",
+	.properties = robosoft_builtin_props,
+	.groups = robosoft_builtin_groups,
+};
+ROBOSOFT_TLV_MODULE_REGISTER(robosoft_builtin_module);
+
+/* Flat property and group tables, populated at init from every registered
+ * module. Always NULL-terminated so the lookup helpers can iterate them
+ * the same way they iterated the original static arrays. */
+static struct tlv_property *tlv_properties;
+static struct tlv_group *tlv_groups;
+static size_t tlv_properties_n;
+static size_t tlv_groups_n;
+static int robosoft_modules_ready;
+
+static const struct robosoft_tlv_module *robosoft_prop_owner(const struct tlv_property *p)
+{
+	const struct robosoft_tlv_module *const *iter;
+	struct tlv_property *tlvp;
+
+	ROBOSOFT_TLV_FOREACH_MODULE(iter) {
+		for (tlvp = (*iter)->properties; tlvp && tlvp->tlvp_name; tlvp++)
+			if (tlvp->tlvp_id == p->tlvp_id &&
+			    !strcmp(tlvp->tlvp_name, p->tlvp_name))
+				return *iter;
+	}
+	return NULL;
+}
+
+static const struct robosoft_tlv_module *robosoft_group_owner(const struct tlv_group *g)
+{
+	const struct robosoft_tlv_module *const *iter;
+	struct tlv_group *tlvg;
+
+	ROBOSOFT_TLV_FOREACH_MODULE(iter) {
+		for (tlvg = (*iter)->groups; tlvg && tlvg->tlvg_pattern; tlvg++)
+			if (tlvg->tlvg_id_first == g->tlvg_id_first &&
+			    tlvg->tlvg_id_last == g->tlvg_id_last &&
+			    !strcmp(tlvg->tlvg_pattern, g->tlvg_pattern))
+				return *iter;
+	}
+	return NULL;
+}
+
+static void robosoft_modules_release(void)
+{
+	free(tlv_properties);
+	tlv_properties = NULL;
+	tlv_properties_n = 0;
+	free(tlv_groups);
+	tlv_groups = NULL;
+	tlv_groups_n = 0;
+	robosoft_modules_ready = 0;
+}
+
+static int robosoft_modules_validate(void)
+{
+	size_t i, j;
+	int errors = 0;
+
+	for (i = 0; i < tlv_properties_n; i++) {
+		for (j = i + 1; j < tlv_properties_n; j++) {
+			if (tlv_properties[i].tlvp_id != tlv_properties[j].tlvp_id)
+				continue;
+			lerror("Property id 0x%02x clash: '%s' (%s) vs '%s' (%s)",
+			       tlv_properties[i].tlvp_id,
+			       tlv_properties[i].tlvp_name,
+			       robosoft_prop_owner(&tlv_properties[i])->name,
+			       tlv_properties[j].tlvp_name,
+			       robosoft_prop_owner(&tlv_properties[j])->name);
+			errors++;
+		}
+	}
+
+	for (i = 0; i < tlv_groups_n; i++) {
+		for (j = i + 1; j < tlv_groups_n; j++) {
+			enum tlv_code a_first = tlv_groups[i].tlvg_id_first;
+			enum tlv_code a_last  = tlv_groups[i].tlvg_id_last;
+			enum tlv_code b_first = tlv_groups[j].tlvg_id_first;
+			enum tlv_code b_last  = tlv_groups[j].tlvg_id_last;
+			if (a_first > b_last || b_first > a_last)
+				continue;
+			lerror("Group id range overlap: '%s' (%s) [0x%02x..0x%02x] vs '%s' (%s) [0x%02x..0x%02x]",
+			       tlv_groups[i].tlvg_pattern,
+			       robosoft_group_owner(&tlv_groups[i])->name,
+			       a_first, a_last,
+			       tlv_groups[j].tlvg_pattern,
+			       robosoft_group_owner(&tlv_groups[j])->name,
+			       b_first, b_last);
+			errors++;
+		}
+	}
+
+	for (i = 0; i < tlv_properties_n; i++) {
+		enum tlv_code id = tlv_properties[i].tlvp_id;
+		for (j = 0; j < tlv_groups_n; j++) {
+			if (id < tlv_groups[j].tlvg_id_first ||
+			    id > tlv_groups[j].tlvg_id_last)
+				continue;
+			lerror("Property id 0x%02x ('%s' in %s) falls inside group range '%s' (%s) [0x%02x..0x%02x]",
+			       id,
+			       tlv_properties[i].tlvp_name,
+			       robosoft_prop_owner(&tlv_properties[i])->name,
+			       tlv_groups[j].tlvg_pattern,
+			       robosoft_group_owner(&tlv_groups[j])->name,
+			       tlv_groups[j].tlvg_id_first,
+			       tlv_groups[j].tlvg_id_last);
+			errors++;
+		}
+	}
+
+	return errors;
+}
+
+static int robosoft_modules_init(void)
+{
+	const struct robosoft_tlv_module *const *iter;
+	struct tlv_property *tlvp;
+	struct tlv_group *tlvg;
+	size_t prop_n = 0, group_n = 0;
+	size_t pi = 0, gi = 0;
+
+	if (robosoft_modules_ready)
+		return 0;
+
+	ROBOSOFT_TLV_FOREACH_MODULE(iter) {
+		for (tlvp = (*iter)->properties; tlvp && tlvp->tlvp_name; tlvp++)
+			prop_n++;
+		for (tlvg = (*iter)->groups; tlvg && tlvg->tlvg_pattern; tlvg++)
+			group_n++;
+	}
+
+	/* +1 leaves a zero-init NULL terminator at the end. */
+	tlv_properties = calloc(prop_n + 1, sizeof(*tlv_properties));
+	tlv_groups = calloc(group_n + 1, sizeof(*tlv_groups));
+	if (!tlv_properties || !tlv_groups) {
+		perror("calloc() failed");
+		robosoft_modules_release();
+		return -1;
+	}
+
+	ROBOSOFT_TLV_FOREACH_MODULE(iter) {
+		for (tlvp = (*iter)->properties; tlvp && tlvp->tlvp_name; tlvp++)
+			tlv_properties[pi++] = *tlvp;
+		for (tlvg = (*iter)->groups; tlvg && tlvg->tlvg_pattern; tlvg++)
+			tlv_groups[gi++] = *tlvg;
+	}
+	tlv_properties_n = prop_n;
+	tlv_groups_n = group_n;
+
+	if (robosoft_modules_validate()) {
+		robosoft_modules_release();
+		return -1;
+	}
+
+	robosoft_modules_ready = 1;
+	return 0;
+}
 
 static struct tlv_property *robosoft_tlv_prop_find(char *key)
 {
@@ -540,6 +700,7 @@ static int robosoft_tlv_flush(void *sp)
 static void robosoft_tlv_free(void *sp)
 {
 	tlvs_free((struct tlv_store *)sp);
+	robosoft_modules_release();
 }
 
 static void *robosoft_tlv_init(struct storage_device *dev, int force)
@@ -548,6 +709,11 @@ static void *robosoft_tlv_init(struct storage_device *dev, int force)
 	struct tlv_store *tlvs;
 	int empty, len = 0;
 	unsigned int crc;
+
+	if (robosoft_modules_init() < 0) {
+		lerror("Failed to initialise robosoft TLV modules");
+		return NULL;
+	}
 
 	if (dev->size <= sizeof(*tlvh)) {
 		lerror("Storage is too small %zu/%zu", dev->size, sizeof(*tlvh));
