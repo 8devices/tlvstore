@@ -28,6 +28,13 @@ CONFIG_DM_ROBOSOFT = y
 SRCS-$(CONFIG_DM_TOBUFI_LEGACY) += datamodel-toblse-tlv.o
 SRCS-$(CONFIG_DM_ROBOSOFT) += datamodel-robosoft-tlv.o
 
+# Auto-include any data-model extension .mk plugins. Each plugin is a
+# self-contained pair of files dropped into ext/:
+#   ext/<model>-<extension>.mk - declares CONFIG_DM_*_<EXTENSION> and appends to SRCS-y
+#   ext/datamodel-<model>-<extension>.c - the extension source
+# Adding a new extension requires no edits to this Makefile.
+-include $(wildcard ext/*.mk)
+
 # Storage backend selection (only one is compiled):
 # Priority: MTD > MMAP > BWB (buffered write-back fallback)
 ifdef CONFIG_IO_MTD
@@ -46,7 +53,7 @@ all: tlvs
 
 .PHONY: clean
 clean:
-	rm -f *.o tlvs
+	rm -f ext/*.o *.o tlvs
 
 .PHONY: install
 install: tlvs
