@@ -48,7 +48,7 @@ static ssize_t tlvp_parse_device_mac(void **data_out, void *data_in, size_t size
 	int extra_len, len;
 
 	len = aparse_mac_address(data_out, data_in, size_in);
-	if (len < -1)
+	if (len < 0)
 		return len;
 
 	extra_len = len + (param ? (strlen(param) + 1) : 0);
