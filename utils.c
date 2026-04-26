@@ -3,6 +3,16 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#ifdef HAVE_LZMA_H
+#include <lzma.h>
+#endif
+
+#include "log.h"
+#include "utils.h"
+
+#ifndef TLVS_DEFAULT_COMPRESSION
+#define TLVS_DEFAULT_COMPRESSION (9 | LZMA_PRESET_EXTREME)
+#endif
 
 void *afread(const char *file_name, size_t *file_size)
 {
@@ -219,3 +229,145 @@ int bempty_data(void *data, size_t size)
 	}
 	return size == 0;
 }
+
+#ifdef HAVE_LZMA_H
+ssize_t acompress_data(void **data_out, void *data_in, size_t size_in)
+{
+	lzma_stream strm = LZMA_STREAM_INIT;
+	lzma_ret ret;
+	uint32_t preset = TLVS_DEFAULT_COMPRESSION;
+	unsigned char *out_tmp, *out_buf;
+	size_t out_next, out_size;
+	size_t size_out = 0, size_inc = size_in;
+
+	out_size = size_inc;
+	if (!data_out)
+		return out_size;
+
+	out_buf = malloc(out_size);
+	if (!out_buf)
+		return -1;
+
+	ret = lzma_easy_encoder(&strm, preset, LZMA_CHECK_CRC64);
+	if (ret != LZMA_OK) {
+		ldebug("Failed to initialize LZMA encoder, error code: %d", ret);
+		free(out_buf);
+		return -1;
+	}
+
+	strm.next_in = data_in;
+	strm.avail_in = size_in;
+	strm.next_out = out_buf;
+	strm.avail_out = out_size;
+
+	while (1) {
+		if (strm.avail_out == 0) {
+			out_next = out_size + size_inc;
+			out_tmp = realloc(out_buf, out_next);
+			if (!out_tmp) {
+				perror("realloc() failed");
+				lzma_end(&strm);
+				free(out_buf);
+				return -1;
+			}
+			strm.next_out = out_tmp + out_size;
+			strm.avail_out = size_inc;
+			out_buf = out_tmp;
+			out_size = out_next;
+		}
+
+		ret = lzma_code(&strm, strm.avail_in ? LZMA_RUN : LZMA_FINISH);
+		if (ret == LZMA_STREAM_END) {
+			size_out = out_size - strm.avail_out;
+			break;
+		}
+		if (ret != LZMA_OK) {
+			lerror("LZMA compression error: %d", ret);
+			lzma_end(&strm);
+			free(out_buf);
+			return -1;
+		}
+	}
+
+	lzma_end(&strm);
+
+	out_tmp = realloc(out_buf, size_out);
+	if (!out_tmp) {
+		perror("realloc() failed");
+		free(out_buf);
+		return -1;
+	}
+
+	*data_out = out_tmp;
+	return size_out;
+}
+
+ssize_t adecompress_data(void **data_out, void *data_in, size_t size_in)
+{
+	lzma_stream strm = LZMA_STREAM_INIT;
+	lzma_ret ret;
+	unsigned char *out_tmp, *out_buf;
+	size_t out_next, out_size;
+	size_t size_out = 0, size_inc = size_in * 4;
+
+	out_size = size_inc;
+	if (!data_out)
+		return out_size;
+
+	out_buf = malloc(out_size);
+	if (!out_buf)
+		return -1;
+
+	ret = lzma_auto_decoder(&strm, UINT64_MAX, 0);
+	if (ret != LZMA_OK) {
+		ldebug("Failed to initialize LZMA decoder, error code: %d", ret);
+		free(out_buf);
+		return -1;
+	}
+
+	strm.next_in = data_in;
+	strm.avail_in = size_in;
+	strm.next_out = out_buf;
+	strm.avail_out = out_size;
+
+	while (1) {
+		if (strm.avail_out == 0) {
+			out_next = out_size + size_inc;
+			out_tmp = realloc(out_buf, out_next);
+			if (!out_tmp) {
+				perror("realloc() failed");
+				lzma_end(&strm);
+				free(out_buf);
+				return -1;
+			}
+			strm.next_out = out_tmp + out_size;
+			strm.avail_out = size_inc;
+			out_buf = out_tmp;
+			out_size = out_next;
+		}
+
+		ret = lzma_code(&strm, LZMA_RUN);
+		if (ret == LZMA_STREAM_END) {
+			size_out = out_size - strm.avail_out;
+			break;
+		}
+		if (ret != LZMA_OK) {
+			ldebug("LZMA decompression error: %d", ret);
+			lzma_end(&strm);
+			free(out_buf);
+			return -1;
+		}
+	}
+
+	lzma_end(&strm);
+
+	out_tmp = realloc(out_buf, size_out);
+	if (!out_tmp) {
+		free(out_buf);
+		return -1;
+	}
+
+	*data_out = out_tmp;
+	return size_out;
+}
+#endif

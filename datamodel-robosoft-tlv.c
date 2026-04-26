@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
-#ifdef HAVE_LZMA_H
-#include <lzma.h>
-#endif
 
 #include "crc.h"
 
@@ -18,10 +15,6 @@
 
 #define EEPROM_MAGIC "RSDMTLV"
 #define EEPROM_VERSION 1
-
-#ifndef TLVS_DEFAULT_COMPRESSION
-#define TLVS_DEFAULT_COMPRESSION (9 | LZMA_PRESET_EXTREME)
-#endif
 
 static int data_dump(const char *key, void *val, int len, enum tlv_spec type)
 {
@@ -99,158 +92,26 @@ static ssize_t tlvp_output_bin(void **data_out, void *data_in, size_t size_in)
 	return acopy_data(data_out, data_in, size_in);
 }
 
+/* Compression callbacks for binary built-in properties. When the build
+ * was configured without liblzma we fall back to a plain copy so the
+ * properties remain usable, just at full size. */
+static ssize_t tlvp_compress_bin(void **data_out, void *data_in, size_t size_in)
+{
 #ifdef HAVE_LZMA_H
-static ssize_t tlvp_compress_bin(void **data_out, void *data_in, size_t size_in)
-{
-	lzma_stream strm = LZMA_STREAM_INIT;
-	lzma_ret ret;
-	uint32_t preset = TLVS_DEFAULT_COMPRESSION;
-	unsigned char *out_tmp, *out_buf;
-	size_t out_next, out_size;
-	size_t size_out = 0, size_inc = size_in;
-
-	out_size = size_inc;
-	if (!data_out)
-		return out_size;
-
-	out_buf = malloc(out_size);
-	if (!out_buf)
-		return -1;
-
-	ret = lzma_easy_encoder(&strm, preset, LZMA_CHECK_CRC64);
-	if (ret != LZMA_OK) {
-		ldebug("Failed to initialize LZMA encoder, error code: %d", ret);
-		free(out_buf);
-		return -1;
-	}
-
-	strm.next_in = data_in;
-	strm.avail_in = size_in;
-	strm.next_out = out_buf;
-	strm.avail_out = out_size;
-
-	while (1) {
-		if (strm.avail_out == 0) {
-			out_next = out_size + size_inc;
-			out_tmp = realloc(out_buf, out_next);
-			if (!out_tmp) {
-				perror("realloc() failed");
-				lzma_end(&strm);
-				free(out_buf);
-				return -1;
-			}
-			strm.next_out = out_tmp + out_size;
-			strm.avail_out = size_inc;
-			out_buf = out_tmp;
-			out_size = out_next;
-		}
-
-		ret = lzma_code(&strm, strm.avail_in ? LZMA_RUN : LZMA_FINISH);
-		if (ret == LZMA_STREAM_END) {
-			size_out = out_size - strm.avail_out;
-			break;
-		}
-		if (ret != LZMA_OK) {
-			lerror("LZMA compression error: %d", ret);
-			lzma_end(&strm);
-			free(out_buf);
-			return -1;
-		}
-	}
-
-	lzma_end(&strm);
-
-	out_tmp = realloc(out_buf, size_out);
-	if (!out_tmp) {
-		perror("realloc() failed");
-		free(out_buf);
-		return -1;
-	}
-
-	*data_out = out_tmp;
-	return size_out;
-}
-
-static ssize_t tlvp_decompress_bin(void **data_out, void *data_in, size_t size_in)
-{
-	lzma_stream strm = LZMA_STREAM_INIT;
-	lzma_ret ret;
-	unsigned char *out_tmp, *out_buf;
-	size_t out_next, out_size;
-	size_t size_out = 0, size_inc = size_in * 4;
-
-	out_size = size_inc;
-	if (!data_out)
-		return out_size;
-
-	out_buf = malloc(out_size);
-	if (!out_buf)
-		return -1;
-
-	ret = lzma_auto_decoder(&strm, UINT64_MAX, 0);
-	if (ret != LZMA_OK) {
-		ldebug("Failed to initialize LZMA decoder, error code: %d", ret);
-		free(out_buf);
-		return -1;
-	}
-
-	strm.next_in = data_in;
-	strm.avail_in = size_in;
-	strm.next_out = out_buf;
-	strm.avail_out = out_size;
-
-	while (1) {
-		if (strm.avail_out == 0) {
-			out_next = out_size + size_inc;
-			out_tmp = realloc(out_buf, out_next);
-			if (!out_tmp) {
-				perror("realloc() failed");
-				lzma_end(&strm);
-				free(out_buf);
-				return -1;
-			}
-			strm.next_out = out_tmp + out_size;
-			strm.avail_out = size_inc;
-			out_buf = out_tmp;
-			out_size = out_next;
-		}
-
-		ret = lzma_code(&strm, LZMA_RUN);
-		if (ret == LZMA_STREAM_END) {
-			size_out = out_size - strm.avail_out;
-			break;
-		}
-		if (ret != LZMA_OK) {
-			/* Error occurred */
-			ldebug("LZMA decompression error: %d", ret);
-			lzma_end(&strm);
-			free(out_buf);
-			return -1;
-		}
-	}
-
-	lzma_end(&strm);
-
-	out_tmp = realloc(out_buf, size_out);
-	if (!out_tmp) {
-		free(out_buf);
-		return -1;
-	}
-
-	*data_out = out_tmp;
-	return size_out;
-}
+	return acompress_data(data_out, data_in, size_in);
 #else
-static ssize_t tlvp_compress_bin(void **data_out, void *data_in, size_t size_in)
-{
 	return acopy_data(data_out, data_in, size_in);
+#endif
 }
 
 static ssize_t tlvp_decompress_bin(void **data_out, void *data_in, size_t size_in)
 {
+#ifdef HAVE_LZMA_H
+	return adecompress_data(data_out, data_in, size_in);
+#else
 	return acopy_data(data_out, data_in, size_in);
-}
 #endif
+}
 
 static struct tlv_property tlv_properties[] = {
 	{ "PRODUCT_ID", EEPROM_ATTR_PRODUCT_ID, INPUT_SPEC_TXT, acopy_data, acopy_data },
