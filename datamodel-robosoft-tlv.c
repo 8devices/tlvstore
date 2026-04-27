@@ -431,8 +431,6 @@ static struct tlv_property *robosoft_tlv_prop_format(struct tlv_field *tlv, char
 static struct tlv_group *robosoft_tlv_param_format(struct tlv_field *tlv, char **key)
 {
 	struct tlv_group *tlvg;
-	ssize_t len;
-	char *val;
 	char *param;
 
 	if (key)
