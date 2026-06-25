@@ -13,8 +13,8 @@ deploy-to-github:
     entrypoint: [""]
   tags:
     - generic
-    - shared
     - docker
+    - deploy
   variables:
     GIT_DEPTH: 0
     GIT_STRATEGY: clone
