@@ -21,7 +21,6 @@ deploy-to-github:
   before_script:
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - eval "$(ssh-agent -s)"
-    - chmod 600 "$GITHUB_SSH_KEY"
     - ssh-add "$GITHUB_SSH_KEY"
     - ssh-keyscan github.com >> ~/.ssh/known_hosts
   script:
