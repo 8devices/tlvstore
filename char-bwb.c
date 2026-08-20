@@ -1,15 +1,51 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <linux/fs.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include "log.h"
 #include "device.h"
+
+static int storage_device_size(int fd, int pref_size, int *size_out)
+{
+	uint64_t dev_size;
+
+	if (ioctl(fd, BLKGETSIZE64, &dev_size)) {
+		lerror("BLKGETSIZE64 ioctl failed: %s", strerror(errno));
+		return -1;
+	}
+
+	if (pref_size && (uint64_t)pref_size <= dev_size) {
+		*size_out = pref_size;
+		ldebug("Block device size %ju bytes, using requested %d bytes",
+		       (uintmax_t)dev_size, pref_size);
+		return 0;
+	}
+
+	if (pref_size)
+		lwarning("Block device size (%ju) is smaller than requested size (%d), using device size",
+			 (uintmax_t)dev_size, pref_size);
+
+	if (dev_size > INT_MAX) {
+		lerror("Block device size %ju exceeds supported maximum %d",
+		       (uintmax_t)dev_size, INT_MAX);
+		return -1;
+	}
+
+	*size_out = dev_size;
+	ldebug("Block device size %d bytes", *size_out);
+
+	return 0;
+}
 
 static ssize_t storage_read(struct storage_device *dev, void *buf, size_t count, size_t offset)
 {
@@ -181,7 +217,11 @@ struct storage_device *storage_open(const char *file_name, int pref_size, int da
 	}
 
 	file_size = fs.st_size;
-	if (pref_size) {
+	if (S_ISBLK(fs.st_mode)) {
+		/* Block devices report zero st_size and reject ftruncate */
+		if (storage_device_size(fd, pref_size, &file_size))
+			goto fail;
+	} else if (pref_size) {
 		if (ftruncate(fd, pref_size))
 			perror("ftruncate() failed");
 		else
@@ -214,14 +254,21 @@ struct storage_device *storage_open(const char *file_name, int pref_size, int da
 	dev->orig_base = NULL;
 	dev->orig_size = 0;
 
-	/* Read the storage contents when storage file has valid size */
-	if (fs.st_size > data_offset) {
+	/* Read the storage contents when storage file has valid size,
+	 * block devices report zero st_size while always holding data */
+	if (S_ISBLK(fs.st_mode) || fs.st_size > data_offset) {
 		/* Best-effort initial read storage data, storage may be
 		 * shorter or larger depending on prefered size argument. */
 		ldebug("Initial read storage file data %d/%d bytes", base_size, file_size);
 		nbytes = storage_read(dev, dev->base, base_size, 0);
 		if (nbytes == -1) {
 			lerror("Failed to read initial storage file data");
+			goto fail;
+		}
+
+		/* Fixed size storage, a short read means an I/O error */
+		if (S_ISBLK(fs.st_mode) && nbytes != base_size) {
+			lerror("Short read %d/%d bytes of block device storage", nbytes, base_size);
 			goto fail;
 		}
 	}
