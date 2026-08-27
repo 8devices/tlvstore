@@ -21,7 +21,7 @@ deploy-to-github:
   before_script:
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - eval "$(ssh-agent -s)"
-    - ssh-add "$GITHUB_SSH_KEY"
+    - ssh-add - < "$GITHUB_SSH_KEY"
     - ssh-keyscan github.com >> ~/.ssh/known_hosts
   script:
     - git remote add github git@github.com:8devices/tlvstore.git || true
